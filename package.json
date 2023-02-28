@@ -1,13 +1,13 @@
 {
   "name": "@mdreal/websocket-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "keywords": [],
   "license": "ISC",
   "author": "",
   "main": "build/node.js",
   "module": "build/browser.mjs",
-  "types": "build/index.d.ts",
+  "types": "build/types.d.ts",
   "scripts": {
     "build": "rm -rf build && NODE_ENV=production ts-node scripts/esbuild.config.ts && tsc",
     "start": "node build/node/index.js"

@@ -1,9 +1,12 @@
 import WebSocket from "isomorphic-ws";
+import EventEmitter from "events";
 
 export interface Message {
   event: string;
   data: any;
 }
+
+class WsEvents extends EventEmitter {}
 
 export class WebSocketClient {
   private static instances: Record<string, WebSocketClient> = {};
@@ -14,10 +17,18 @@ export class WebSocketClient {
   private messageQueue: string[] = [];
   private emitQueue: Message[] = [];
 
+  private readonly wsEvents = new WsEvents();
+
   private constructor(url: string, autoConnect = true) {
     this.url = url;
     this.autoConnect = autoConnect;
     this.connect();
+
+    this.wsEvents.on("message", (data: any) => {
+      if (data.event) {
+        this.wsEvents.emit(data.event, data.data);
+      }
+    });
   }
 
   public static getInstance(url: string, autoConnect = true): WebSocketClient {
@@ -28,7 +39,8 @@ export class WebSocketClient {
     return WebSocketClient.instances[url];
   }
 
-  public send(message: string): void {
+  public send(event: string, data?: any): void {
+    const message = JSON.stringify({ event, data });
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.messageQueue.push(message);
     } else {
@@ -40,14 +52,12 @@ export class WebSocketClient {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.emitQueue.push(message);
     } else {
-      this.ws.emit(message.event, message.data);
+      this.wsEvents.emit(message.event, message.data);
     }
   }
 
   public on(event: string, callback: (data: any) => void): void {
-    if (this.ws) {
-      this.ws.on(event, callback);
-    }
+    this.wsEvents.on(event, callback);
   }
 
   public close(): void {
@@ -70,12 +80,17 @@ export class WebSocketClient {
       this.processEmitQueue();
     });
 
-    this.ws.addEventListener("message", (message: string) => {
-      this.emit(JSON.parse(message));
+    this.ws.addEventListener("message", message => {
+      try {
+        const data = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
+        this.wsEvents.emit("message", data);
+      } catch {
+        this.wsEvents.emit("message", message.data);
+      }
     });
 
     this.ws.addEventListener("close", () => {
-      this.ws = undefined;
+      this.ws = null;
       if (this.autoConnect) {
         setTimeout(() => {
           this.connect();
@@ -97,7 +112,7 @@ export class WebSocketClient {
     while (this.emitQueue.length > 0 && this.ws && this.ws.readyState === WebSocket.OPEN) {
       const message = this.emitQueue.shift();
       if (message) {
-        this.ws.emit(message.event, message.data);
+        this.wsEvents.emit(message.event, message.data);
       }
     }
   }

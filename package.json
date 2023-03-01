@@ -9,7 +9,7 @@
   "module": "build/browser.mjs",
   "types": "build/types.d.ts",
   "scripts": {
-    "build": "rm -rf build && NODE_ENV=production ts-node scripts/esbuild.config.ts && tsc",
+    "build": "rm -rf build && ts-node scripts/esbuild.config.ts && tsc && sed -i 's/websocket-client/@mdreal\\/websocket-client/g' build/types.d.ts",
     "start": "node build/node/index.js"
   },
   "dependencies": {

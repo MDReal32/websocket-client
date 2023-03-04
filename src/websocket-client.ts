@@ -1,5 +1,5 @@
 import WebSocket from "isomorphic-ws";
-import EventEmitter from "events";
+import EventEmitter from "node:events";
 
 export interface Message {
   event: string;
@@ -8,23 +8,39 @@ export interface Message {
 
 class WsEvents extends EventEmitter {}
 
+const getValidUrl = (url: string): string => {
+  const regex = /^(ws|http)s?:\/\/(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(?::\d{1,5})?(?:\/\S*)?$/;
+  if (regex.test(url)) {
+    const uri = new URL(url);
+    if (uri.protocol === "http:") uri.protocol = "ws:";
+    if (uri.protocol === "https:") uri.protocol = "wss:";
+    return uri.toString();
+  }
+  const isSsl = window.location.protocol === "https:" || window.location.hostname === "wss:";
+  const protocol = isSsl ? "wss:" : "ws:";
+
+  if (url.startsWith("/")) {
+    return `${protocol}//${window.location.host}${url}`;
+  }
+
+  throw new Error(`Invalid url: ${url}`);
+};
+
 export class WebSocketClient {
   private static instances: Record<string, WebSocketClient> = {};
 
-  private readonly url: string;
   private ws: WebSocket | null = null;
-  private autoConnect: boolean;
   private messageQueue: string[] = [];
   private emitQueue: Message[] = [];
 
   private readonly wsEvents = new WsEvents();
 
-  private constructor(url: string, autoConnect = true) {
-    this.url = url;
+  private constructor(private readonly url: string, private autoConnect = true) {
+    this.url = getValidUrl(url);
     this.autoConnect = autoConnect;
     this.connect();
 
-    this.wsEvents.on("message", (data: any) => {
+    this.wsEvents.on("message", (data: Message) => {
       if (data.event) {
         this.wsEvents.emit(data.event, data.data);
       }
@@ -80,7 +96,7 @@ export class WebSocketClient {
       this.processEmitQueue();
     });
 
-    this.ws.addEventListener("message", message => {
+    this.ws.addEventListener("message", (message: Message) => {
       try {
         const data = typeof message.data === "string" ? JSON.parse(message.data) : message.data;
         this.wsEvents.emit("message", data);

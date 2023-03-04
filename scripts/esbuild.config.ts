@@ -1,4 +1,5 @@
 import { build, BuildOptions } from "esbuild";
+import { polyfillNode } from "esbuild-plugin-polyfill-node";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -11,7 +12,7 @@ const nodeConfig: BuildOptions = {
   target: "es6",
   format: "cjs",
   minify: isProduction,
-  sourcemap: !isProduction
+  sourcemap: true
 };
 
 const browserConfig: BuildOptions = {
@@ -22,7 +23,8 @@ const browserConfig: BuildOptions = {
   target: "es6",
   format: "esm",
   minify: isProduction,
-  sourcemap: !isProduction,
+  sourcemap: true,
+  plugins: [polyfillNode()],
   define: {
     "process.env.NODE_ENV": `"${process.env.NODE_ENV || "development"}"`
   }

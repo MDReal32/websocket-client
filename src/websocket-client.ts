@@ -16,11 +16,15 @@ const getValidUrl = (url: string): string => {
     if (uri.protocol === "https:") uri.protocol = "wss:";
     return uri.toString();
   }
-  const isSsl = window.location.protocol === "https:" || window.location.hostname === "wss:";
-  const protocol = isSsl ? "wss:" : "ws:";
 
-  if (url.startsWith("/")) {
-    return `${protocol}//${window.location.host}${url}`;
+  if (typeof window !== "undefined") {
+    const isSsl = window.location.protocol === "https:" || window.location.hostname === "wss:";
+    const protocol = isSsl ? "wss:" : "ws:";
+
+    const uri = new URL(url);
+    uri.protocol = protocol;
+    url.startsWith("/") && (uri.host = window.location.host);
+    return uri.toString();
   }
 
   throw new Error(`Invalid url: ${url}`);

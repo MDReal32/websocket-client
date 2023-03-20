@@ -21,6 +21,10 @@ const getValidUrl = (url: string): string => {
     const isSsl = window.location.protocol === "https:" || window.location.hostname === "wss:";
     const protocol = isSsl ? "wss:" : "ws:";
 
+    if (url.startsWith("/") && !url.startsWith("//")) {
+      return `${protocol}//${window.location.host}${url}`;
+    }
+
     const uri = new URL(url);
     uri.protocol = protocol;
     url.startsWith("/") && (uri.host = window.location.host);

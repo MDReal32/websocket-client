@@ -10,6 +10,7 @@
   "types": "build/types.d.ts",
   "scripts": {
     "build": "rm -rf build && ts-node scripts/esbuild.config.ts && tsc && sed -i 's/websocket-client/@mdreal\\/websocket-client/g' build/types.d.ts",
+    "prepublish": "yarn build",
     "start": "node build/node/index.js"
   },
   "dependencies": {

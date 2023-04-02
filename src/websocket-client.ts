@@ -31,7 +31,7 @@ const getValidUrl = (url: string): string => {
     return uri.toString();
   }
 
-  throw new Error(`Invalid url: ${url}`);
+  return url;
 };
 
 export class WebSocketClient {
